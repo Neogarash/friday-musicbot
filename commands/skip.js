@@ -1,9 +1,10 @@
 const {GuildMember} = require('discord.js');
+const { useQueue } = require('discord-player')
 
 module.exports = {
   name: 'skip',
   description: 'Skip a song!',
-  async execute(interaction, player) {
+  async execute(interaction) {
     if (!(interaction.member instanceof GuildMember) || !interaction.member.voice.channel) {
       return void interaction.reply({
         content: 'You are not in a voice channel!',
@@ -12,8 +13,8 @@ module.exports = {
     }
 
     if (
-      interaction.guild.me.voice.channelId &&
-      interaction.member.voice.channelId !== interaction.guild.me.voice.channelId
+      interaction.guild.members.me.voice.channelId &&
+      interaction.member.voice.channelId !== interaction.guild.members.me.voice.channelId
     ) {
       return void interaction.reply({
         content: 'You are not in my voice channel!',
@@ -22,10 +23,12 @@ module.exports = {
     }
 
     await interaction.deferReply();
-    const queue = player.getQueue(interaction.guildId);
-    if (!queue || !queue.playing) return void interaction.followUp({content: '❌ | No music is being played!'});
-    const currentTrack = queue.current;
-    const success = queue.skip();
+
+    const queue = useQueue(interaction.guild.id)
+    if (!queue || !queue.currentTrack) return void interaction.followUp({content: '❌ | No music is being played!'});
+    const currentTrack = queue.currentTrack;
+
+    const success = queue.node.skip()
     return void interaction.followUp({
       content: success ? `✅ | Skipped **${currentTrack}**!` : '❌ | Something went wrong!',
     });
